@@ -1,5 +1,5 @@
 # Arma / DayZ Epoch Remote Control Discord Bot (EARLY ACCESS)
-If you want to package the bot yourself to make sure nothing funny was added to the exe, you can install the `nuitka` python module and run the following command:
+If you want to package the bot yourself to make sure nothing funny was added to the exe, you can install the `lightbulb`, `hikari`, and `nuitka` python modules and run the following command:
 ~~~py
 python -m nuitka --onefile bot.py
 ~~~
@@ -17,12 +17,13 @@ python -m nuitka --onefile bot.py
 
 ## Config
 - The bot will look for a config file in the same folder as the bot.exe file. If it doesn't exist, it will create one.
-- Copy the token from the discord bot page into the config file if you haven't already.
-- Copy the discord server ID from your discord application.
-- Copy your discord user ID from your discord application.
+- Copy the token from the discord bot page into the config file if you haven't already. Keep this token secret, it will be used to authenticate the bot to discord.
+- Copy the discord server ID from your discord application, you can do this by enabling the developer setting in discord and right clicking your discord server.
+- Copy your discord user ID from your discord application, you can do this by enabling the developer setting in discord and right clicking your user.
 - Configure which commands you want to use.
 - For the XXX_Script_Location, it is best to use the full path to the script. This would look like: `C:/DayZ Epoch/scripts/server/XXX.sqf` and you should use `/` instead of `\` for the path separator. Th
 - If you don't want automatic SQL backups but still want the manual option, set the `SQL_Backups` to `true` and `Automatic_SQL_Backup_Minutes` to `0`.
+- If you are using SQL backups, it is best to follow the same path format as the script location.
 
 
 ## Future plans
