@@ -3,6 +3,7 @@ import lightbulb
 from lightbulb.ext import tasks
 import json
 import os
+import subprocess
 import time
 
 import logging
@@ -30,94 +31,89 @@ if not os.path.isfile("config.json"):
         "Discord_Server_IDs": [123456789012345678],
         "Discord_Remote_Control_User_IDs": [123456789012345678],
         "SQL_Backups": True,
-        "Basic_SQL_Backup_Script_Location": "directory/backup_sql.bat",
+        "SQL_Backup_Script_Location": "directory/backup_sql.bat",
         "Automatic_SQL_Backup_Minutes": 30,
-        "Advanced_SQL_Backups": True,
-        "Advanced_SQL_IP": "127.0.0.1",
-        "Advanced_SQL_Port": "3306",
-        "Advanced_SQL_Username": "root",
-        "Advanced_SQL_Password": "",
-        "Advanced_SQL_Database": "dayz_epoch",
-        "Advanced_SQL_Backups_Location": "SQL_Backups",
-        "Advanced_SQL_Backups_Max_Amount": 48,
-        "Advanced_SQL_Restore_Command": True,
+        "SQL_Restore_Command": True,
+        "SQL_Backups_Location": "SQL_Backups",
         "Remote_Stop_Start_Restart": True,
         "Start_Server_Script_Location": "directory/start.bat",
         "Stop_Server_Script_Location": "directory/stop.bat",
         "Restart_Server_Script_Location": "directory/restart.bat",
+        "Use_Custom_Commands": True,
+        "Custom_Commands": {
+            "discordCommandName": {
+                "location":"batch file location.bat",
+                "description":"description of the command",
+                "response":"success! response to the command"
+            },
+            "discordCommandName2": {
+                "location":"batch file location2.bat",
+                "description":"description of the command2",
+                "response":"success! response to the command2"
+            }
+        }
     }
     with open("config.json", "w") as config_file:
-        json.dump(config_dict, config_file)
+        json.dump(config_dict, config_file, indent=4)
     AllowBotStart = False
 else:
     with open("config.json", "r") as config_file:
         config_dict = json.load(config_file)
 
-    expected_dict_keys = ["token","Discord_Server_IDs","Discord_Remote_Control_User_IDs","SQL_Backups","Basic_SQL_Backup_Script_Location","Automatic_SQL_Backup_Minutes","Advanced_SQL_Backups","Advanced_SQL_IP","Advanced_SQL_Port","Advanced_SQL_Username","Advanced_SQL_Password","Advanced_SQL_Database","Advanced_SQL_Backups_Location","Advanced_SQL_Backups_Max_Amount","Advanced_SQL_Restore_Command","Remote_Stop_Start_Restart","Start_Server_Script_Location","Stop_Server_Script_Location","Restart_Server_Script_Location"]
+    expected_dict_keys = ["token","Discord_Server_IDs","Discord_Remote_Control_User_IDs","SQL_Backups","SQL_Backup_Script_Location","Automatic_SQL_Backup_Minutes","SQL_Backups_Location","SQL_Restore_Command","Remote_Stop_Start_Restart","Start_Server_Script_Location","Stop_Server_Script_Location","Restart_Server_Script_Location"]
     for key in expected_dict_keys:
         if key not in config_dict:
             print_log("config.json is missing "+key+". Please edit it accordingly.")
             AllowBotStart = False
     
-    if config_dict["token"] == "PUT_YOUR_DISCORD_BOT_TOKEN_HERE" or len(config_dict["token"]) < 50:
-        print_log("config.json is invalid on token. Please edit it accordingly.")
-        AllowBotStart = False
-    if type(config_dict["Discord_Server_IDs"]) is not list or len(config_dict["Discord_Server_IDs"]) == 0:
-        print_log("config.json is invalid on Discord_Server_IDs. Please edit it accordingly.")
-        AllowBotStart = False
-    if type(config_dict["Discord_Remote_Control_User_IDs"]) is not list or len(config_dict["Discord_Remote_Control_User_IDs"]) == 0:
-        print_log("config.json is invalid on Discord_Remote_Control_User_IDs. Please edit it accordingly.")
-        AllowBotStart = False
-    if type(config_dict["SQL_Backups"]) is not bool:
-        print_log("config.json is invalid on SQL_Backups. Please edit it accordingly.")
-        AllowBotStart = False
-    if config_dict["SQL_Backups"] and (type(config_dict["Basic_SQL_Backup_Script_Location"]) is not str or len(config_dict["Basic_SQL_Backup_Script_Location"]) == 0 or not os.path.isfile(config_dict["Basic_SQL_Backup_Script_Location"])):
-        print_log("config.json is invalid on Basic_SQL_Backup_Script_Location. Please edit it accordingly.")
-        AllowBotStart = False
-    if type(config_dict["Automatic_SQL_Backup_Minutes"]) is not int:
-        print_log("config.json is invalid on Automatic_SQL_Backup_Minutes. Please edit it accordingly.")
-        AllowBotStart = False
-    if type(config_dict["Advanced_SQL_Backups"]) is not bool:
-        print_log("config.json is invalid on Advanced_SQL_Backups. Please edit it accordingly.")
-        AllowBotStart = False
-    if config_dict["Advanced_SQL_Backups"] == True and (type(config_dict["Advanced_SQL_IP"]) is not str or len(config_dict["Advanced_SQL_IP"]) == 0):
-        print_log("config.json is invalid on Advanced_SQL_IP. Please edit it accordingly.")
-        AllowBotStart = False
-    if config_dict["Advanced_SQL_Backups"] == True and (type(config_dict["Advanced_SQL_Port"]) is not str or len(config_dict["Advanced_SQL_Port"]) == 0):
-        print_log("config.json is invalid on Advanced_SQL_Port. Please edit it accordingly.")
-        AllowBotStart = False
-    if config_dict["Advanced_SQL_Backups"] == True and (type(config_dict["Advanced_SQL_Username"]) is not str or len(config_dict["Advanced_SQL_Username"]) == 0):
-        print_log("config.json is invalid on Advanced_SQL_Username. Please edit it accordingly.")
-        AllowBotStart = False
-    if config_dict["Advanced_SQL_Backups"] == True and (type(config_dict["Advanced_SQL_Password"]) is not str or len(config_dict["Advanced_SQL_Password"]) == 0):
-        print_log("config.json is invalid on Advanced_SQL_Password. Please edit it accordingly.")
-        AllowBotStart = False
-    if config_dict["Advanced_SQL_Backups"] == True and (type(config_dict["Advanced_SQL_Database"]) is not str or len(config_dict["Advanced_SQL_Database"]) == 0):
-        print_log("config.json is invalid on Advanced_SQL_Database. Please edit it accordingly.")
-        AllowBotStart = False
-    if config_dict["Advanced_SQL_Backups"] == True and (type(config_dict["Advanced_SQL_Backups_Location"]) is not str or len(config_dict["Advanced_SQL_Backups_Location"]) == 0):
-        print_log("config.json is invalid on Advanced_SQL_Backups_Location. Please edit it accordingly.")
-        AllowBotStart = False
-    if config_dict["Advanced_SQL_Backups"] == True and type(config_dict["Advanced_SQL_Restore_Command"]) is not bool:
-        print_log("config.json is invalid on Advanced_SQL_Restore_Command. Please edit it accordingly.")
-        AllowBotStart = False
-    if type(config_dict["Remote_Stop_Start_Restart"]) is not bool:
-        print_log("config.json is invalid on Remote_Stop_Start_Restart. Please edit it accordingly.")
-        AllowBotStart = False
-    if config_dict["Remote_Stop_Start_Restart"] == True and type(config_dict["Start_Server_Script_Location"]) is not str:
-        print_log("config.json is invalid on Start_Server_Script_Location. Please edit it accordingly.")
-        AllowBotStart = False
-    if config_dict["Remote_Stop_Start_Restart"] == True and type(config_dict["Stop_Server_Script_Location"]) is not str:
-        print_log("config.json is invalid on Stop_Server_Script_Location. Please edit it accordingly.")
-        AllowBotStart = False
-    if config_dict["Remote_Stop_Start_Restart"] == True and type(config_dict["Restart_Server_Script_Location"]) is not str:
-        print_log("config.json is invalid on Restart_Server_Script_Location. Please edit it accordingly.")
-        AllowBotStart = False
+    if AllowBotStart: #Has all of the right key pairs
+        if config_dict["token"] == "PUT_YOUR_DISCORD_BOT_TOKEN_HERE" or len(config_dict["token"]) < 50:
+            print_log("config.json is invalid on token. Please edit it accordingly.")
+            AllowBotStart = False
+        if type(config_dict["Discord_Server_IDs"]) is not list or len(config_dict["Discord_Server_IDs"]) == 0:
+            print_log("config.json is invalid on Discord_Server_IDs. Please edit it accordingly.")
+            AllowBotStart = False
+        if type(config_dict["Discord_Remote_Control_User_IDs"]) is not list or len(config_dict["Discord_Remote_Control_User_IDs"]) == 0:
+            print_log("config.json is invalid on Discord_Remote_Control_User_IDs. Please edit it accordingly.")
+            AllowBotStart = False
+        if type(config_dict["SQL_Backups"]) is not bool:
+            print_log("config.json is invalid on SQL_Backups. Please edit it accordingly.")
+            AllowBotStart = False
+        if config_dict["SQL_Backups"] and (type(config_dict["SQL_Backup_Script_Location"]) is not str or len(config_dict["SQL_Backup_Script_Location"]) == 0 or not os.path.isfile(config_dict["SQL_Backup_Script_Location"])):
+            print_log("config.json is invalid on SQL_Backup_Script_Location. Please edit it accordingly.")
+            AllowBotStart = False
+        if type(config_dict["Automatic_SQL_Backup_Minutes"]) is not int:
+            print_log("config.json is invalid on Automatic_SQL_Backup_Minutes. Please edit it accordingly.")
+            AllowBotStart = False
+        if type(config_dict["SQL_Restore_Command"]) is not bool:
+            print_log("config.json is invalid on SQL_Restore_Command. Please edit it accordingly.")
+            AllowBotStart = False
+        if type(config_dict["Remote_Stop_Start_Restart"]) is not bool:
+            print_log("config.json is invalid on Remote_Stop_Start_Restart. Please edit it accordingly.")
+            AllowBotStart = False
+        if config_dict["Remote_Stop_Start_Restart"] == True and type(config_dict["Start_Server_Script_Location"]) is not str:
+            print_log("config.json is invalid on Start_Server_Script_Location. Please edit it accordingly.")
+            AllowBotStart = False
+        if config_dict["Remote_Stop_Start_Restart"] == True and type(config_dict["Stop_Server_Script_Location"]) is not str:
+            print_log("config.json is invalid on Stop_Server_Script_Location. Please edit it accordingly.")
+            AllowBotStart = False
+        if config_dict["Remote_Stop_Start_Restart"] == True and type(config_dict["Restart_Server_Script_Location"]) is not str:
+            print_log("config.json is invalid on Restart_Server_Script_Location. Please edit it accordingly.")
+            AllowBotStart = False
     
 
 
-if AllowBotStart:
+if AllowBotStart: #Everything appears to be good to go
     bot = lightbulb.BotApp(prefix=None, token=config_dict["token"], default_enabled_guilds=config_dict["Discord_Server_IDs"], help_slash_command=True)
+
+    async def send_not_authorized_message(ctx):
+        response = await ctx.respond(
+            hikari.Embed(
+                title="Not allowed",
+                description="You do not have permission to use this command."
+                ),
+            flags=hikari.MessageFlag.EPHEMERAL
+        )
 
     #ERROR HANDLER
     @bot.listen(lightbulb.CommandErrorEvent)
@@ -149,7 +145,7 @@ if AllowBotStart:
             @lightbulb.implements(lightbulb.SlashCommand)
             async def start_command(ctx: lightbulb.Context) -> None:
                 if ctx.author.id in config_dict["Discord_Remote_Control_User_IDs"]:
-                    os.system(config_dict["Start_Server_Script_Location"])
+                    subprocess.Popen(config_dict["Start_Server_Script_Location"], shell=True)
                     print_log(str(ctx.author)+" started the server.")
                     response = await ctx.respond(
                         hikari.Embed(
@@ -160,13 +156,7 @@ if AllowBotStart:
                     )
                 else:
                     print_log(str(ctx.author)+" tried to start the server. They are not in the allowed IDs.")
-                    response = await ctx.respond(
-                        hikari.Embed(
-                            title="Not allowed",
-                            description="You do not have permission to use this command."
-                            ),
-                        flags=hikari.MessageFlag.EPHEMERAL
-                    )
+                    send_not_authorized_message(ctx)
 
         if len(config_dict["Stop_Server_Script_Location"]) > 0 and os.path.isfile(config_dict["Stop_Server_Script_Location"]):
             @bot.command()
@@ -174,7 +164,7 @@ if AllowBotStart:
             @lightbulb.implements(lightbulb.SlashCommand)
             async def stop_command(ctx: lightbulb.Context) -> None:
                 if ctx.author.id in config_dict["Discord_Remote_Control_User_IDs"]:
-                    os.system(config_dict["Stop_Server_Script_Location"])
+                    subprocess.Popen(config_dict["Stop_Server_Script_Location"], shell=True)
                     print_log(str(ctx.author)+" stopped the server.")
                     response = await ctx.respond(
                         hikari.Embed(
@@ -185,13 +175,7 @@ if AllowBotStart:
                     )
                 else:
                     print_log(str(ctx.author)+" tried to stop the server. They are not in the allowed IDs.")
-                    response = await ctx.respond(
-                        hikari.Embed(
-                            title="Not allowed",
-                            description="You do not have permission to use this command."
-                            ),
-                        flags=hikari.MessageFlag.EPHEMERAL
-                    )
+                    send_not_authorized_message(ctx)
 
         if len(config_dict["Restart_Server_Script_Location"]) > 0 and os.path.isfile(config_dict["Restart_Server_Script_Location"]):
             @bot.command()
@@ -199,7 +183,7 @@ if AllowBotStart:
             @lightbulb.implements(lightbulb.SlashCommand)
             async def restart_command(ctx: lightbulb.Context) -> None:
                 if ctx.author.id in config_dict["Discord_Remote_Control_User_IDs"]:
-                    os.system(config_dict["Restart_Server_Script_Location"])
+                    subprocess.Popen(config_dict["Restart_Server_Script_Location"], shell=True)
                     print_log(str(ctx.author)+" restarted the server.")
                     response = await ctx.respond(
                         hikari.Embed(
@@ -210,53 +194,73 @@ if AllowBotStart:
                     )
                 else:
                     print_log(str(ctx.author)+" tried to restart the server. They are not in the allowed IDs.")
-                    response = await ctx.respond(
-                        hikari.Embed(
-                            title="Not allowed",
-                            description="You do not have permission to use this command."
-                            ),
-                        flags=hikari.MessageFlag.EPHEMERAL
-                    )
+                    send_not_authorized_message(ctx)
 
+    if len(config_dict["SQL_Backup_Script_Location"]) > 0 and os.path.isfile(config_dict["SQL_Backup_Script_Location"]):
+        @bot.command()
+        @lightbulb.command("backup", "Manually backup the database", guilds=config_dict["Discord_Server_IDs"]) #, auto_defer=True
+        @lightbulb.implements(lightbulb.SlashCommand)
+        async def backup_command(ctx: lightbulb.Context) -> None:
+            if ctx.author.id in config_dict["Discord_Remote_Control_User_IDs"]:
+                subprocess.Popen(config_dict["SQL_Backup_Script_Location"], shell=True)
+                print_log(str(ctx.author)+" backed up the database.")
+                response = await ctx.respond(
+                    hikari.Embed(
+                        title="Manually backing up database",
+                        description="The database should be backed up now."
+                        ),
+                    flags=hikari.MessageFlag.EPHEMERAL
+                )
+            else:
+                print_log(str(ctx.author)+" tried to backup the server. They are not in the allowed IDs.")
+                send_not_authorized_message(ctx)
 
-    if config_dict["Advanced_SQL_Backups"] == True and config_dict["Advanced_SQL_Restore_Command"] is True:
-        if config_dict["Remote_Stop_Start_Restart"] == True and len(config_dict["Start_Server_Script_Location"]) > 0 and os.path.isfile(config_dict["Start_Server_Script_Location"])and len(config_dict["Stop_Server_Script_Location"]) > 0 and os.path.isfile(config_dict["Stop_Server_Script_Location"]):
+    if config_dict["SQL_Restore_Command"] is True:
+        if config_dict["Remote_Stop_Start_Restart"] == True and len(config_dict["Start_Server_Script_Location"]) > 0 and os.path.isfile(config_dict["Start_Server_Script_Location"]) and len(config_dict["Stop_Server_Script_Location"]) > 0 and os.path.isfile(config_dict["Stop_Server_Script_Location"]):
             @bot.command()
             @lightbulb.command("restore", "Restore the server from a backup", guilds=config_dict["Discord_Server_IDs"]) #, auto_defer=True
             @lightbulb.implements(lightbulb.SlashCommand)
             async def restore_command(ctx: lightbulb.Context) -> None:
-                pass
+                if ctx.author.id in config_dict["Discord_Remote_Control_User_IDs"]:
+                    sql_dir = os.listdir(config_dict["SQL_Backups_Location"])
         else:
             print_log("ERROR: You must have a start and stop script to use the restore command.")
 
-
-
-
+    if config_dict["Use_Custom_Commands"] == True:
+        if len(config_dict["Custom_Commands"]) > 0:
+            for command in config_dict["Custom_Commands"]:
+                if len(config_dict["Custom_Commands"][command]["description"]) > 0 and len(config_dict["Custom_Commands"][command]["response"]) > 0:
+                    @bot.command()
+                    @lightbulb.command(name=command, description=config_dict["Custom_Commands"][command]["description"], guilds=config_dict["Discord_Server_IDs"]) #, auto_defer=True
+                    @lightbulb.implements(lightbulb.SlashCommand)
+                    async def custom_command(ctx: lightbulb.Context) -> None:
+                        if ctx.author.id in config_dict["Discord_Remote_Control_User_IDs"]:
+                            print_log(str(ctx.author)+" used a custom command: "+command)
+                            response = await ctx.respond(
+                                hikari.Embed(
+                                    title=command,
+                                    description=config_dict["Custom_Commands"][command]["response"]
+                                    ),
+                                flags=hikari.MessageFlag.EPHEMERAL
+                            )
+                        else:
+                            print_log(str(ctx.author)+" tried to use a custom command: "+command+". They are not in the allowed IDs.")
+                            send_not_authorized_message(ctx)
+                else:
+                    print_log("ERROR: You must have a description and response for your "+command+" command.")
 
     #TASKS
-    if config_dict["Automatic_SQL_Backup_Minutes"] > 0:
-        if config_dict["Advanced_SQL_Backups"] == True:
-            if len(config_dict["Advanced_SQL_Backup_Location"]) > 0:
-                if not os.path.isdir(config_dict["Advanced_SQL_Backup_Location"]):
-                    print_log("Creating specified directory for backups...")
-                    os.mkdir(config_dict["Advanced_SQL_Backup_Location"])
-                @tasks.task(m=config_dict["Automatic_SQL_Backup_Minutes"])
-                async def AdvancedAutomaticBackupSQL():
-                    print_log("Backing up SQL...")
-                    pass
-            else:
-                print_log("Advanced_SQL_Backup_Location is not set in config.json. Please set it accordingly.")
-        else:
-            if len(config_dict["Basic_SQL_Backup_Script_Location"]) > 0:
-                if os.path.isfile(config_dict["Basic_SQL_Backup_Script_Location"]):
+    if config_dict["Automatic_SQL_Backup_Minutes"] > 0 and config_dict["SQL_Backups"]:
+            if len(config_dict["SQL_Backup_Script_Location"]) > 0:
+                if os.path.isfile(config_dict["SQL_Backup_Script_Location"]):
                     @tasks.task(m=config_dict["Automatic_SQL_Backup_Minutes"])
                     async def AutomaticBackupSQL():
                         print_log("Backing up SQL...")
-                        os.system(config_dict["Basic_SQL_Backup_Script_Location"])
+                        subprocess.Popen(config_dict["SQL_Backup_Script_Location"], shell=True)
                 else:
-                    print_log("Basic_SQL_Backup_Script_Location is not set in config.json. Please set it accordingly.")
+                    print_log("SQL_Backup_Script_Location is not set in config.json. Please set it accordingly.")
             else:
-                print_log("Basic_SQL_Backup_Script_Location is not set in config.json. Please set it accordingly.")
+                print_log("SQL_Backup_Script_Location is not set in config.json. Please set it accordingly.")
 
     @tasks.task(h=1)
     async def updateLoggingFile():
