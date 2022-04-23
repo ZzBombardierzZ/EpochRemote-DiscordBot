@@ -1,5 +1,5 @@
 # Arma / DayZ Epoch Remote Control Discord Bot (EARLY ACCESS)
-If you want to package the bot yourself to make sure nothing funny was added to the exe, you can install the `lightbulb`, `hikari`, and `nuitka` python modules and run the following command:
+For your security, this bot only runs batch files so that my bot isn't reading any of your private information. Feel free to check out the source code as well. If you want to package the bot yourself to make sure nothing funny was added to the exe, you can install the `lightbulb`, `hikari`, and `nuitka` python modules and run the following command:
 ~~~py
 python -m nuitka --onefile bot.py
 ~~~
@@ -8,6 +8,7 @@ python -m nuitka --onefile bot.py
 - Remote control of a Arma / DayZ Epoch server, allowing you to start / stop / restart the server remotely from discord.
 - Automatic backups of the server's database.
 - Manually backup the server's database.
+- Easily restore your database from a backup.
 - Add custom commands to the discord server that can call other batch files.
 
 ## Installation
@@ -28,7 +29,6 @@ python -m nuitka --onefile bot.py
 
 
 ## Future plans
-- Add a restore sql server command. This would require getting the sql login info in the config file, causing more security concerns from potential users. This would have a neat menu that you can choose which backup to restore from.
 - Add RCON commands to the bot and add option for RCON warnings to be sent when stopping/restarting/restoring the server.
 - Add a git pull command to the bot?
 - Make the exe into a GUI enabled application?

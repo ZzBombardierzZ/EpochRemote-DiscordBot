@@ -1,4 +1,6 @@
 import hikari
+from hikari.api import ActionRowBuilder
+import typing as t
 import lightbulb
 from lightbulb.ext import tasks
 import json
@@ -105,6 +107,122 @@ else:
 
 if AllowBotStart: #Everything appears to be good to go
     bot = lightbulb.BotApp(prefix=None, token=config_dict["token"], default_enabled_guilds=config_dict["Discord_Server_IDs"], help_slash_command=True)
+
+    def generate_restore_buttons(bot: lightbulb.BotApp) -> t.Iterable[ActionRowBuilder]:
+        rows: t.List[ActionRowBuilder] = []
+        row = bot.rest.build_action_row()
+        #(row.add_button(hikari.ButtonStyle.SECONDARY,"back").set_emoji("◀️").add_to_container())
+        (row.add_button(hikari.ButtonStyle.SECONDARY,"up").set_emoji("🔼").add_to_container())
+        (row.add_button(hikari.ButtonStyle.SECONDARY,"select").set_emoji("✅").set_label("Select Restore").add_to_container())
+        (row.add_button(hikari.ButtonStyle.SECONDARY,"down").set_emoji("🔽").add_to_container())
+        #(row.add_button(hikari.ButtonStyle.SECONDARY,"forward").set_emoji("▶️").add_to_container())
+
+        rows.append(row)
+        return rows
+
+    async def handle_restore_menu(
+        bot: lightbulb.BotApp,
+        author: hikari.User,
+        message: hikari.Message,
+        file_list: list,
+    ) -> None:
+        """Watches for events, and handles responding to them."""
+
+        selected_file_index = -1
+        selected_file = "123"
+        with bot.stream(hikari.InteractionCreateEvent, 120).filter(
+            # Here we filter out events we don't care about.
+            lambda e: (isinstance(e.interaction, hikari.ComponentInteraction) and e.interaction.user == author and e.interaction.message == message)
+        ) as stream:
+            async for event in stream:
+                the_message = ""
+                cid = event.interaction.custom_id
+
+                if cid == "down" or cid == "up":
+                    if cid == "down":
+                        if selected_file_index < (len(file_list) - 1):
+                            selected_file_index+=1
+                        else:
+                            selected_file_index = 0
+                    else:
+                        if selected_file_index > 0:
+                            selected_file_index-=1
+                        else:
+                            selected_file_index = (len(file_list)-1)
+                    selected_file = file_list[selected_file_index]
+                    for file in file_list:
+                        if selected_file == file:
+                            the_message += "[**| "+str(file)+" | SELECTED**]\n"
+                        else: 
+                            the_message += "| "+str(file)+" |\n"
+
+                    embed = hikari.Embed(
+                        title="Your SQL Backups",
+                        description=the_message,
+                    )
+
+                elif cid == "select":
+                    if selected_file_index == -1 or selected_file == "123":
+                        the_message = "YOU HAVEN'T SELECTED A FILE!\n----------------------------------------------\n"
+                        for file in file_list:
+                            the_message += "| "+str(file)+" |\n"
+                        embed = hikari.Embed(
+                            title="Your SQL Backups",
+                            description=the_message,
+                        )
+                        try:
+                            await event.interaction.create_initial_response(
+                                hikari.ResponseType.MESSAGE_UPDATE,
+                                embed=embed,
+                                flags=hikari.MessageFlag.EPHEMERAL
+                            )
+                        except hikari.NotFoundError:
+                            await event.interaction.edit_initial_response(
+                                embed=embed,
+                                flags=hikari.MessageFlag.EPHEMERAL
+                            )
+                    else:
+                        the_message = "----------------------------------------------\nRestoring from SQL File: "+selected_file+" \n----------------------------------------------\n"
+
+                        embed = hikari.Embed(
+                            title="Restoring SQL Backup!",
+                            description=the_message,
+                        )
+
+                        try:
+                            await event.interaction.create_initial_response(
+                                hikari.ResponseType.MESSAGE_UPDATE,
+                                embed=embed,
+                                components=[],
+                                flags=hikari.MessageFlag.EPHEMERAL
+                            )
+                        except hikari.NotFoundError:
+                            await event.interaction.edit_initial_response(
+                                embed=embed,
+                                components=[],
+                                flags=hikari.MessageFlag.EPHEMERAL
+                            )
+                        
+                        #Restore SQL File Here
+                        if str(config_dict["SQL_Backup_Location"]).endswith("/"):
+                            selected_file_path = str(config_dict["SQL_Backup_Location"])+str(selected_file)
+                        else:
+                            selected_file_path = config_dict["SQL_Backup_Location"]+"/"+selected_file
+                        
+                        if not os.path.isfile(selected_file_path):
+                            print_log("SQL Backup File Does Not Exist: "+selected_file_path)
+                            return
+                    
+                        print_log("Restoring SQL File: "+selected_file_path)
+                        #stop server
+                        subprocess.Popen(config_dict["Stop_Server_Script_Location"], shell=True)
+                        time.sleep(5)
+                        #restore
+                        
+
+
+
+        print_log("Ending restore menu from "+str(author))
 
     async def send_not_authorized_message(ctx):
         response = await ctx.respond(
@@ -223,6 +341,27 @@ if AllowBotStart: #Everything appears to be good to go
             async def restore_command(ctx: lightbulb.Context) -> None:
                 if ctx.author.id in config_dict["Discord_Remote_Control_User_IDs"]:
                     sql_dir = os.listdir(config_dict["SQL_Backups_Location"])
+                    for file in sql_dir:
+                        if not file.endswith(".sql"):
+                            sql_dir.remove(file)
+                    if len(sql_dir) > 0:
+                        rows = []
+                        rows = generate_restore_buttons(ctx.bot)
+                        the_message = ""
+                        for file in sql_dir:
+                            the_message += "| "+str(file)+" |\n"
+                        embed = hikari.Embed(
+                            title="Your SQL Backups",
+                            description=the_message,
+                        )
+                        response = await ctx.respond(
+                            embed,
+                            flags=hikari.MessageFlag.EPHEMERAL,
+                            components=rows,
+                        )
+                        message = await response.message()
+                        await handle_restore_menu(ctx.bot, ctx.author, message, sql_dir)
+
         else:
             print_log("ERROR: You must have a start and stop script to use the restore command.")
 
