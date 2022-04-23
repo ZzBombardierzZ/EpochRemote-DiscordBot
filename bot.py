@@ -39,14 +39,14 @@ if not os.path.isfile("config.json"):
         "Start_Server_Script_Location": "directory/start.bat",
         "Stop_Server_Script_Location": "directory/stop.bat",
         "Restart_Server_Script_Location": "directory/restart.bat",
-        "Use_Custom_Commands": True,
+        "Use_Custom_Commands": False,
         "Custom_Commands": {
-            "discordCommandName": {
+            "discordcommandname": {
                 "location":"batch file location.bat",
                 "description":"description of the command",
                 "response":"success! response to the command"
             },
-            "discordCommandName2": {
+            "thismustbelowercase": {
                 "location":"batch file location2.bat",
                 "description":"description of the command2",
                 "response":"success! response to the command2"
