@@ -8,7 +8,7 @@ python -m nuitka --onefile bot.py
 - Remote control of a Arma / DayZ Epoch server, allowing you to start / stop / restart the server remotely from discord.
 - Automatic backups of the server's database.
 - Manually backup the server's database.
-- Add custom commands to the server with batch files.
+- Add custom commands to the discord server that can call other batch files.
 
 ## Installation
 - Download the latest release from [here](https://github.com/ZzBombardierzZ/EpochRemote-DiscordBot/archive/refs/heads/main.zip) and extract the bot.exe file into it's own folder. It's important to put it in a containing folder as it spits out a config file and log folder when it starts.
@@ -22,7 +22,7 @@ python -m nuitka --onefile bot.py
 - Copy your discord user ID from your discord application.
 - Configure which commands you want to use.
 - For the XXX_Script_Location, it is best to use the full path to the script. This would look like: `C:/DayZ Epoch/scripts/server/XXX.sqf` and you should use `/` instead of `\` for the path separator. Th
-- If you don't want automatic SQL backups, set the `Automatic_SQL_Backup_Minutes` to 0.
+- If you don't want automatic SQL backups but still want the manual option, set the `SQL_Backups` to `true` and `Automatic_SQL_Backup_Minutes` to `0`.
 
 
 ## Future plans
