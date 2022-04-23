@@ -29,7 +29,7 @@ python -m nuitka --onefile bot.py
 
 
 ## Future plans
-- Add RCON commands to the bot and add option for RCON warnings to be sent when stopping/restarting/restoring the server.
+- Add RCON commands to the bot and add option for RCON warnings to be sent when stopping/restarting/restoring the server. This would require getting RCON info in the config, adding potential security concerns from owners.
 - Add a git pull command to the bot?
 - Make the exe into a GUI enabled application?
 - If you have any other ideas, please let me know by either creating an issue on github or by sending a message to my discord `ZzBombardierzZ#5945`.
