@@ -1,5 +1,6 @@
 # Arma / DayZ Epoch Remote Control Discord Bot (EARLY ACCESS)
 *Note: This bot is currently in early access and is not guaranteed to work. There is also a false positive currently from Windows defender which I am working on fixing.*
+
 For your security, this bot only runs batch files so that my bot isn't reading any of your private information. Although it is open source and therefor you should be able to see for yourself that none of your information is being taken. If you want to package the bot yourself to make sure nothing funny was added to the exe, you can install the `lightbulb`, `hikari`, and `nuitka` python modules and run the following command in the directory containing bot.py:
 ~~~py
 python -m nuitka --onefile bot.py
