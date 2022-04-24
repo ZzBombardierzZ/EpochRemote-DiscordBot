@@ -33,14 +33,15 @@ if not os.path.isfile("config.json"):
         "Discord_Server_IDs": [123456789012345678],
         "Discord_Remote_Control_User_IDs": [123456789012345678],
         "SQL_Backups": True,
-        "SQL_Backup_Script_Location": "directory/backup_sql.bat",
+        "SQL_Backup_Script_Location": "batch_files/backup_sql.bat",
         "Automatic_SQL_Backup_Minutes": 30,
         "SQL_Restore_Command": True,
+        "Restore_SQL_Script_Location": "batch_files/restore_sql.bat",
         "SQL_Backups_Location": "SQL_Backups",
         "Remote_Stop_Start_Restart": True,
-        "Start_Server_Script_Location": "directory/start.bat",
-        "Stop_Server_Script_Location": "directory/stop.bat",
-        "Restart_Server_Script_Location": "directory/restart.bat",
+        "Start_Server_Script_Location": "batch_files/start.bat",
+        "Stop_Server_Script_Location": "batch_files/stop.bat",
+        "Restart_Server_Script_Location": "batch_files/restart.bat",
         "Use_Custom_Commands": False,
         "Custom_Commands": {
             "discordcommandname": {
@@ -62,7 +63,7 @@ else:
     with open("config.json", "r") as config_file:
         config_dict = json.load(config_file)
 
-    expected_dict_keys = ["token","Discord_Server_IDs","Discord_Remote_Control_User_IDs","SQL_Backups","SQL_Backup_Script_Location","Automatic_SQL_Backup_Minutes","SQL_Backups_Location","SQL_Restore_Command","Remote_Stop_Start_Restart","Start_Server_Script_Location","Stop_Server_Script_Location","Restart_Server_Script_Location"]
+    expected_dict_keys = ["token","Discord_Server_IDs","Discord_Remote_Control_User_IDs","SQL_Backups","SQL_Backup_Script_Location","Automatic_SQL_Backup_Minutes","SQL_Backups_Location","SQL_Restore_Command","Restore_SQL_Script_Location","Remote_Stop_Start_Restart","Start_Server_Script_Location","Stop_Server_Script_Location","Restart_Server_Script_Location"]
     for key in expected_dict_keys:
         if key not in config_dict:
             print_log("config.json is missing "+key+". Please edit it accordingly.")
@@ -89,6 +90,9 @@ else:
             AllowBotStart = False
         if type(config_dict["SQL_Restore_Command"]) is not bool:
             print_log("config.json is invalid on SQL_Restore_Command. Please edit it accordingly.")
+            AllowBotStart = False
+        if config_dict["SQL_Restore_Command"] and (type(config_dict["Restore_SQL_Script_Location"]) is not str or len(config_dict["Restore_SQL_Script_Location"]) == 0 or not os.path.isfile(config_dict["Restore_SQL_Script_Location"])):
+            print_log("config.json is invalid on Restore_SQL_Script_Location. Please edit it accordingly.")
             AllowBotStart = False
         if type(config_dict["Remote_Stop_Start_Restart"]) is not bool:
             print_log("config.json is invalid on Remote_Stop_Start_Restart. Please edit it accordingly.")
@@ -218,7 +222,31 @@ if AllowBotStart: #Everything appears to be good to go
                         subprocess.Popen(config_dict["Stop_Server_Script_Location"], shell=True)
                         time.sleep(5)
                         #restore
+                        subprocess.Popen(config_dict["Restore_SQL_Script_Location"]+" "+selected_file_path, shell=True)
+                        time.sleep(5)
+                        #start server
+                        subprocess.Popen(config_dict["Start_Server_Script_Location"], shell=True)
+
+                        embed = hikari.Embed(
+                            title="Finished!",
+                            description="Server should be back online now!",
+                        )
+
+                        try:
+                            await event.interaction.create_initial_response(
+                                hikari.ResponseType.MESSAGE_UPDATE,
+                                embed=embed,
+                                components=[],
+                                flags=hikari.MessageFlag.EPHEMERAL
+                            )
+                        except hikari.NotFoundError:
+                            await event.interaction.edit_initial_response(
+                                embed=embed,
+                                components=[],
+                                flags=hikari.MessageFlag.EPHEMERAL
+                            )
                         
+
 
 
 
