@@ -1,5 +1,5 @@
 # Arma / DayZ Epoch Remote Control Discord Bot (EARLY ACCESS)
-For your security, this bot only runs batch files so that my bot isn't reading any of your private information. Feel free to check out the source code as well. If you want to package the bot yourself to make sure nothing funny was added to the exe, you can install the `lightbulb`, `hikari`, and `nuitka` python modules and run the following command:
+For your security, this bot only runs batch files so that my bot isn't reading any of your private information. Although it is open source and therefor you should be able to see for yourself that none of your information is being taken. If you want to package the bot yourself to make sure nothing funny was added to the exe, you can install the `lightbulb`, `hikari`, and `nuitka` python modules and run the following command in the directory containing bot.py:
 ~~~py
 python -m nuitka --onefile bot.py
 ~~~
@@ -26,10 +26,16 @@ python -m nuitka --onefile bot.py
 - For the XXX_Script_Location, it is best to use the full path to the script. This would look like: `"C:/DayZ Epoch/scripts/server/XXX.bat"` and you should use `/` instead of `\` for the path separator. Th
 - If you don't want automatic SQL backups but still want the manual option, set the `SQL_Backups` to `true` and `Automatic_SQL_Backup_Minutes` to `0`.
 - If you are using SQL backups, it is best to follow the same path format as the script location.
+- **If you are using my included batch files** you will need to configure each one correctly. You can also simply change the path of the XXX_Script_Location to your own batch files.
 
 
-## Future plans
+## Possible Future Plans
 - Add RCON commands to the bot and add option for RCON warnings to be sent when stopping/restarting/restoring the server. This would require getting RCON info in the config, adding potential security concerns from owners.
 - Add a git pull command to the bot?
 - Make the exe into a GUI enabled application?
+- Add an automatic startup script if the armaserver.exe is not running?
+- Add option to automatically stop/start the server at certain times, replacing the need for BEC? Could use RCON for restart warnings too.
 - If you have any other ideas, please let me know by either creating an issue on github or by sending a message to my discord `ZzBombardierzZ#5945`.
+
+### Legal
+This bot is open source, made by yours truly. The batch files are either customized by me or community scripts that I have put all in one place. I allow anyone to modify or use this however they want. I do not take any responsibility for any damage done to your server. If you have any questions, please contact me on discord.
