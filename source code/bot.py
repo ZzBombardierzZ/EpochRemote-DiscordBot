@@ -26,7 +26,7 @@ def print_log(message) -> None:
 
 AllowBotStart = True
 
-if not os.path.isfile("config.json"):
+if not os.path.exists("config.json"):
     print_log("config.json not found. Creating one for you. Please edit it accordingly.")
     config_dict = {
         "token": "PUT_YOUR_DISCORD_BOT_TOKEN_HERE",
@@ -82,7 +82,7 @@ else:
         if type(config_dict["SQL_Backups"]) is not bool:
             print_log("config.json is invalid on SQL_Backups. Please edit it accordingly.")
             AllowBotStart = False
-        if config_dict["SQL_Backups"] and (type(config_dict["SQL_Backup_Script_Location"]) is not str or len(config_dict["SQL_Backup_Script_Location"]) == 0 or not os.path.isfile(config_dict["SQL_Backup_Script_Location"])):
+        if config_dict["SQL_Backups"] and (type(config_dict["SQL_Backup_Script_Location"]) is not str or len(config_dict["SQL_Backup_Script_Location"]) == 0 or not os.path.exists(config_dict["SQL_Backup_Script_Location"])):
             print_log("config.json is invalid on SQL_Backup_Script_Location. Please edit it accordingly.")
             AllowBotStart = False
         if type(config_dict["Automatic_SQL_Backup_Minutes"]) is not int:
@@ -91,7 +91,7 @@ else:
         if type(config_dict["SQL_Restore_Command"]) is not bool:
             print_log("config.json is invalid on SQL_Restore_Command. Please edit it accordingly.")
             AllowBotStart = False
-        if config_dict["SQL_Restore_Command"] and (type(config_dict["Restore_SQL_Script_Location"]) is not str or len(config_dict["Restore_SQL_Script_Location"]) == 0 or not os.path.isfile(config_dict["Restore_SQL_Script_Location"])):
+        if config_dict["SQL_Restore_Command"] and (type(config_dict["Restore_SQL_Script_Location"]) is not str or len(config_dict["Restore_SQL_Script_Location"]) == 0 or not os.path.exists(config_dict["Restore_SQL_Script_Location"])):
             print_log("config.json is invalid on Restore_SQL_Script_Location. Please edit it accordingly.")
             AllowBotStart = False
         if type(config_dict["Remote_Stop_Start_Restart"]) is not bool:
@@ -115,11 +115,11 @@ if AllowBotStart: #Everything appears to be good to go
     def generate_restore_buttons(bot: lightbulb.BotApp) -> t.Iterable[ActionRowBuilder]:
         rows: t.List[ActionRowBuilder] = []
         row = bot.rest.build_action_row()
-        #(row.add_button(hikari.ButtonStyle.SECONDARY,"back").set_emoji("◀️").add_to_container())
+        (row.add_button(hikari.ButtonStyle.SECONDARY,"back").set_emoji("◀️").add_to_container())
         (row.add_button(hikari.ButtonStyle.SECONDARY,"up").set_emoji("🔼").add_to_container())
-        (row.add_button(hikari.ButtonStyle.SECONDARY,"select").set_emoji("✅").set_label("Select Restore").add_to_container())
+        (row.add_button(hikari.ButtonStyle.PRIMARY,"select").set_emoji("✅").set_label("Select Restore").add_to_container())
         (row.add_button(hikari.ButtonStyle.SECONDARY,"down").set_emoji("🔽").add_to_container())
-        #(row.add_button(hikari.ButtonStyle.SECONDARY,"forward").set_emoji("▶️").add_to_container())
+        (row.add_button(hikari.ButtonStyle.SECONDARY,"forward").set_emoji("▶️").add_to_container())
 
         rows.append(row)
         return rows
@@ -128,10 +128,14 @@ if AllowBotStart: #Everything appears to be good to go
         bot: lightbulb.BotApp,
         author: hikari.User,
         message: hikari.Message,
-        file_list: list,
+        nested_file_list: list,
     ) -> None:
         """Watches for events, and handles responding to them."""
 
+        print("Restore Menu")
+
+        page = 0
+        file_list = nested_file_list[page]
         selected_file_index = -1
         selected_file = "123"
         with bot.stream(hikari.InteractionCreateEvent, 120).filter(
@@ -139,9 +143,27 @@ if AllowBotStart: #Everything appears to be good to go
             lambda e: (isinstance(e.interaction, hikari.ComponentInteraction) and e.interaction.user == author and e.interaction.message == message)
         ) as stream:
             async for event in stream:
+                print("action received")
                 the_message = ""
                 cid = event.interaction.custom_id
 
+                if cid == "forward" or cid == "back":
+                    selected_file_index = -1
+                    selected_file = "123"
+                    if cid == "forward":
+                        if page < (len(nested_file_list) - 1):
+                            page+=1
+                        else:
+                            page = 0
+                    else:
+                        if page > 0:
+                            page-=1
+                        else:
+                            page = (len(nested_file_list)-1)
+                
+                file_list = nested_file_list[page]
+                
+                
                 if cid == "down" or cid == "up":
                     if cid == "down":
                         if selected_file_index < (len(file_list) - 1):
@@ -154,18 +176,31 @@ if AllowBotStart: #Everything appears to be good to go
                         else:
                             selected_file_index = (len(file_list)-1)
                     selected_file = file_list[selected_file_index]
+                    
+                
+                if cid != "select":
                     for file in file_list:
                         if selected_file == file:
-                            the_message += "[**| "+str(file)+" | SELECTED**]\n"
+                            the_message += "**[| "+str(file)+" | SELECTED]**\n"
                         else: 
                             the_message += "| "+str(file)+" |\n"
-
                     embed = hikari.Embed(
-                        title="Your SQL Backups",
+                        title="Your SQL Backups (Page "+str(page+1)+"/"+str(len(nested_file_list))+")",
                         description=the_message,
                     )
+                    try:
+                        await event.interaction.create_initial_response(
+                            hikari.ResponseType.MESSAGE_UPDATE,
+                            embed=embed,
+                            flags=hikari.MessageFlag.EPHEMERAL
+                        )
+                    except hikari.NotFoundError:
+                        await event.interaction.edit_initial_response(
+                            embed=embed,
+                            flags=hikari.MessageFlag.EPHEMERAL
+                        )
 
-                elif cid == "select":
+                else:
                     if selected_file_index == -1 or selected_file == "123":
                         the_message = "YOU HAVEN'T SELECTED A FILE!\n----------------------------------------------\n"
                         for file in file_list:
@@ -200,7 +235,7 @@ if AllowBotStart: #Everything appears to be good to go
                                 components=[],
                                 flags=hikari.MessageFlag.EPHEMERAL
                             )
-                        except hikari.NotFoundError:
+                        except:
                             await event.interaction.edit_initial_response(
                                 embed=embed,
                                 components=[],
@@ -208,43 +243,43 @@ if AllowBotStart: #Everything appears to be good to go
                             )
                         
                         #Restore SQL File Here
-                        if str(config_dict["SQL_Backup_Location"]).endswith("/"):
-                            selected_file_path = str(config_dict["SQL_Backup_Location"])+str(selected_file)
+                        if str(config_dict["SQL_Backups_Location"]).endswith("/"):
+                            selected_file_path = str(config_dict["SQL_Backups_Location"])+str(selected_file)
                         else:
-                            selected_file_path = config_dict["SQL_Backup_Location"]+"/"+selected_file
+                            selected_file_path = config_dict["SQL_Backups_Location"]+"/"+selected_file
                         
-                        if not os.path.isfile(selected_file_path):
+                        if not os.path.exists(selected_file_path):
                             print_log("SQL Backup File Does Not Exist: "+selected_file_path)
                             return
                     
                         print_log("Restoring SQL File: "+selected_file_path)
                         #stop server
-                        subprocess.Popen(config_dict["Stop_Server_Script_Location"], shell=True)
+                        subprocess.Popen(config_dict["Stop_Server_Script_Location"], shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE)
                         time.sleep(5)
                         #restore
-                        subprocess.Popen(config_dict["Restore_SQL_Script_Location"]+" "+selected_file_path, shell=True)
+                        subprocess.Popen(config_dict["Restore_SQL_Script_Location"]+" "+selected_file_path, shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE)
                         time.sleep(5)
                         #start server
-                        subprocess.Popen(config_dict["Start_Server_Script_Location"], shell=True)
+                        subprocess.Popen(config_dict["Start_Server_Script_Location"], shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
-                        embed = hikari.Embed(
-                            title="Finished!",
-                            description="Server should be back online now!",
-                        )
+                        # embed = hikari.Embed(
+                        #     title="Finished!",
+                        #     description="Server should be back online now!",
+                        # )
 
-                        try:
-                            await event.interaction.create_initial_response(
-                                hikari.ResponseType.MESSAGE_UPDATE,
-                                embed=embed,
-                                components=[],
-                                flags=hikari.MessageFlag.EPHEMERAL
-                            )
-                        except hikari.NotFoundError:
-                            await event.interaction.edit_initial_response(
-                                embed=embed,
-                                components=[],
-                                flags=hikari.MessageFlag.EPHEMERAL
-                            )
+                        # try:
+                        #     await event.interaction.create_initial_response(
+                        #         hikari.ResponseType.MESSAGE_UPDATE,
+                        #         embed=embed,
+                        #         components=[],
+                        #         flags=hikari.MessageFlag.EPHEMERAL
+                        #     )
+                        # except:
+                        #     await event.interaction.edit_initial_response(
+                        #         embed=embed,
+                        #         components=[],
+                        #         flags=hikari.MessageFlag.EPHEMERAL
+                        #     )
                         
 
 
@@ -285,13 +320,13 @@ if AllowBotStart: #Everything appears to be good to go
             print_log("Told "+str(event.context.author)+" to tell Bomb if the error was a mistake...")
 
     if config_dict["Remote_Stop_Start_Restart"] == True:
-        if len(config_dict["Start_Server_Script_Location"]) > 0 and os.path.isfile(config_dict["Start_Server_Script_Location"]):
+        if len(config_dict["Start_Server_Script_Location"]) > 0 and os.path.exists(config_dict["Start_Server_Script_Location"]):
             @bot.command()
             @lightbulb.command("start", "Start the server", guilds=config_dict["Discord_Server_IDs"]) #, auto_defer=True
             @lightbulb.implements(lightbulb.SlashCommand)
             async def start_command(ctx: lightbulb.Context) -> None:
                 if ctx.author.id in config_dict["Discord_Remote_Control_User_IDs"]:
-                    subprocess.Popen(config_dict["Start_Server_Script_Location"], shell=True)
+                    subprocess.Popen(config_dict["Start_Server_Script_Location"], shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE)
                     print_log(str(ctx.author)+" started the server.")
                     response = await ctx.respond(
                         hikari.Embed(
@@ -304,13 +339,13 @@ if AllowBotStart: #Everything appears to be good to go
                     print_log(str(ctx.author)+" tried to start the server. They are not in the allowed IDs.")
                     send_not_authorized_message(ctx)
 
-        if len(config_dict["Stop_Server_Script_Location"]) > 0 and os.path.isfile(config_dict["Stop_Server_Script_Location"]):
+        if len(config_dict["Stop_Server_Script_Location"]) > 0 and os.path.exists(config_dict["Stop_Server_Script_Location"]):
             @bot.command()
             @lightbulb.command("stop", "Stop the server", guilds=config_dict["Discord_Server_IDs"]) #, auto_defer=True
             @lightbulb.implements(lightbulb.SlashCommand)
             async def stop_command(ctx: lightbulb.Context) -> None:
                 if ctx.author.id in config_dict["Discord_Remote_Control_User_IDs"]:
-                    subprocess.Popen(config_dict["Stop_Server_Script_Location"], shell=True)
+                    subprocess.Popen(config_dict["Stop_Server_Script_Location"], shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE)
                     print_log(str(ctx.author)+" stopped the server.")
                     response = await ctx.respond(
                         hikari.Embed(
@@ -323,13 +358,13 @@ if AllowBotStart: #Everything appears to be good to go
                     print_log(str(ctx.author)+" tried to stop the server. They are not in the allowed IDs.")
                     send_not_authorized_message(ctx)
 
-        if len(config_dict["Restart_Server_Script_Location"]) > 0 and os.path.isfile(config_dict["Restart_Server_Script_Location"]):
+        if len(config_dict["Restart_Server_Script_Location"]) > 0 and os.path.exists(config_dict["Restart_Server_Script_Location"]):
             @bot.command()
             @lightbulb.command("restart", "Restart the server", guilds=config_dict["Discord_Server_IDs"]) #, auto_defer=True
             @lightbulb.implements(lightbulb.SlashCommand)
             async def restart_command(ctx: lightbulb.Context) -> None:
                 if ctx.author.id in config_dict["Discord_Remote_Control_User_IDs"]:
-                    subprocess.Popen(config_dict["Restart_Server_Script_Location"], shell=True)
+                    subprocess.Popen(config_dict["Restart_Server_Script_Location"], shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE)
                     print_log(str(ctx.author)+" restarted the server.")
                     response = await ctx.respond(
                         hikari.Embed(
@@ -342,13 +377,13 @@ if AllowBotStart: #Everything appears to be good to go
                     print_log(str(ctx.author)+" tried to restart the server. They are not in the allowed IDs.")
                     send_not_authorized_message(ctx)
 
-    if len(config_dict["SQL_Backup_Script_Location"]) > 0 and os.path.isfile(config_dict["SQL_Backup_Script_Location"]):
+    if len(config_dict["SQL_Backup_Script_Location"]) > 0 and os.path.exists(config_dict["SQL_Backup_Script_Location"]):
         @bot.command()
         @lightbulb.command("backup", "Manually backup the database", guilds=config_dict["Discord_Server_IDs"]) #, auto_defer=True
         @lightbulb.implements(lightbulb.SlashCommand)
         async def backup_command(ctx: lightbulb.Context) -> None:
             if ctx.author.id in config_dict["Discord_Remote_Control_User_IDs"]:
-                subprocess.Popen(config_dict["SQL_Backup_Script_Location"], shell=True)
+                subprocess.Popen(config_dict["SQL_Backup_Script_Location"], shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE)
                 print_log(str(ctx.author)+" backed up the database.")
                 response = await ctx.respond(
                     hikari.Embed(
@@ -362,7 +397,7 @@ if AllowBotStart: #Everything appears to be good to go
                 send_not_authorized_message(ctx)
 
     if config_dict["SQL_Restore_Command"] is True:
-        if config_dict["Remote_Stop_Start_Restart"] == True and len(config_dict["Start_Server_Script_Location"]) > 0 and os.path.isfile(config_dict["Start_Server_Script_Location"]) and len(config_dict["Stop_Server_Script_Location"]) > 0 and os.path.isfile(config_dict["Stop_Server_Script_Location"]):
+        if config_dict["Remote_Stop_Start_Restart"] == True and len(config_dict["Start_Server_Script_Location"]) > 0 and os.path.exists(config_dict["Start_Server_Script_Location"]) and len(config_dict["Stop_Server_Script_Location"]) > 0 and os.path.exists(config_dict["Stop_Server_Script_Location"]):
             @bot.command()
             @lightbulb.command("restore", "Restore the server from a backup", guilds=config_dict["Discord_Server_IDs"]) #, auto_defer=True
             @lightbulb.implements(lightbulb.SlashCommand)
@@ -372,14 +407,33 @@ if AllowBotStart: #Everything appears to be good to go
                     for file in sql_dir:
                         if not file.endswith(".sql"):
                             sql_dir.remove(file)
+
+                    counter = 0
+                    nested_dir_list = []
+                    for file in reversed(sql_dir):
+                        if counter == 0:
+                            nested_dir_list.append([file])
+                            counter += 1
+                        elif counter == 20:
+                            nested_dir_list.append([file])
+                            counter = 1
+                        else:
+                            nested_dir_list[-1].append(file)
+                            counter += 1
+
+
                     if len(sql_dir) > 0:
                         rows = []
                         rows = generate_restore_buttons(ctx.bot)
                         the_message = ""
-                        for file in sql_dir:
-                            the_message += "| "+str(file)+" |\n"
+                        page1 = nested_dir_list[0]
+                        for file in page1:
+                            if len(the_message) + len("| "+str(file)+" |\n") < 4096:
+                                the_message += "| "+str(file)+" |\n"
+                            else:
+                                break
                         embed = hikari.Embed(
-                            title="Your SQL Backups",
+                            title="Your SQL Backups (Page 1 of "+str(len(nested_dir_list))+")",
                             description=the_message,
                         )
                         response = await ctx.respond(
@@ -388,7 +442,8 @@ if AllowBotStart: #Everything appears to be good to go
                             components=rows,
                         )
                         message = await response.message()
-                        await handle_restore_menu(ctx.bot, ctx.author, message, sql_dir)
+                        #print(nested_dir_list)
+                        await handle_restore_menu(ctx.bot, ctx.author, message, nested_dir_list)
 
         else:
             print_log("ERROR: You must have a start and stop script to use the restore command.")
@@ -419,11 +474,11 @@ if AllowBotStart: #Everything appears to be good to go
     #TASKS
     if config_dict["Automatic_SQL_Backup_Minutes"] > 0 and config_dict["SQL_Backups"]:
             if len(config_dict["SQL_Backup_Script_Location"]) > 0:
-                if os.path.isfile(config_dict["SQL_Backup_Script_Location"]):
+                if os.path.exists(config_dict["SQL_Backup_Script_Location"]):
                     @tasks.task(m=config_dict["Automatic_SQL_Backup_Minutes"])
                     async def AutomaticBackupSQL():
                         print_log("Backing up SQL...")
-                        subprocess.Popen(config_dict["SQL_Backup_Script_Location"], shell=True)
+                        subprocess.Popen(config_dict["SQL_Backup_Script_Location"], shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE)
                 else:
                     print_log("SQL_Backup_Script_Location is not set in config.json. Please set it accordingly.")
             else:
