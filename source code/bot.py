@@ -257,7 +257,8 @@ if AllowBotStart: #Everything appears to be good to go
                         subprocess.Popen(config_dict["Stop_Server_Script_Location"], shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE)
                         time.sleep(5)
                         #restore
-                        subprocess.Popen(config_dict["Restore_SQL_Script_Location"]+" "+selected_file_path, shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE)
+                        ######FIX ME !!!!
+                        #os.system('cmd /c ""C:/Program Files/MySQL/MySQL Server 5.7/bin/mysql.exe" -u TLF_local -pTLF123! < "C:/TLFzone/epoch-chernarus-winter/SQL-Backups/tlf_epoch_1_backup.2022-04-25_1400.sql""')
                         time.sleep(5)
                         #start server
                         subprocess.Popen(config_dict["Start_Server_Script_Location"], shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE)
@@ -458,6 +459,7 @@ if AllowBotStart: #Everything appears to be good to go
                     async def custom_command(ctx: lightbulb.Context) -> None:
                         if ctx.author.id in config_dict["Discord_Remote_Control_User_IDs"]:
                             print_log(str(ctx.author)+" used a custom command: "+command)
+                            subprocess.Popen(config_dict["Custom_Commands"][command]["location"], shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE)
                             response = await ctx.respond(
                                 hikari.Embed(
                                     title=command,
