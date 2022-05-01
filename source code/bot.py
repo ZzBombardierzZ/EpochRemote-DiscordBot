@@ -110,7 +110,7 @@ else:
 
 
 if AllowBotStart: #Everything appears to be good to go
-    bot = lightbulb.BotApp(prefix=None, token=config_dict["token"], default_enabled_guilds=config_dict["Discord_Server_IDs"], help_slash_command=True)
+    bot = lightbulb.BotApp(prefix=None, token=config_dict["token"], default_enabled_guilds=config_dict["Discord_Server_IDs"], help_slash_command=True, banner=None)
 
     def generate_restore_buttons(bot: lightbulb.BotApp) -> t.Iterable[ActionRowBuilder]:
         rows: t.List[ActionRowBuilder] = []
@@ -259,6 +259,7 @@ if AllowBotStart: #Everything appears to be good to go
                         #restore
                         ######FIX ME !!!!
                         #os.system('cmd /c ""C:/Program Files/MySQL/MySQL Server 5.7/bin/mysql.exe" -u TLF_local -pTLF123! < "C:/TLFzone/epoch-chernarus-winter/SQL-Backups/tlf_epoch_1_backup.2022-04-25_1400.sql""')
+                        subprocess.run([config_dict["Restore_SQL_Script_Location"], selected_file_path], shell=True)
                         time.sleep(5)
                         #start server
                         subprocess.Popen(config_dict["Start_Server_Script_Location"], shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE)

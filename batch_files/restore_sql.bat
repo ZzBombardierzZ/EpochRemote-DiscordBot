@@ -19,4 +19,4 @@ TIMEOUT 2
 
 cd %mysqldir%
 
-mysql -u %mysqluser% -p %mysqlpassword% < %SQL_Backup_File%
+mysql -u %mysqluser% -p%mysqlpassword% < %SQL_Backup_File%
