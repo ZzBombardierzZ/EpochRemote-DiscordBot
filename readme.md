@@ -1,9 +1,9 @@
 # Arma / DayZ Epoch Remote Control Discord Bot (EARLY ACCESS)
-*Note: This bot is currently in early access and is not guaranteed to work. There is also a false positive currently from Windows defender which I am working on fixing.*
+*Note: This bot is currently in early access and is not guaranteed to work.*
 
-For your security, this bot only runs batch files so that my bot isn't reading any of your private information. Although it is open source and therefor you should be able to see for yourself that none of your information is being taken. If you want to package the bot yourself to make sure nothing funny was added to the exe, you can install the `lightbulb`, `hikari`, and `nuitka` python modules and run the following command in the directory containing bot.py:
+For your security, this bot only runs batch files so that my bot isn't reading any of your private information. Although it is open source and therefor you should be able to see for yourself that none of your information is being taken. If you want to package the bot yourself to make sure nothing funny was added to the exe, you can install the `lightbulb`, `hikari`, and `pyinstaller` python modules and run the following command in the directory containing bot.py:
 ~~~py
-python -m nuitka --onefile bot.py
+pyinstaller --onefile bot.py
 ~~~
 
 ## Features
@@ -11,6 +11,7 @@ python -m nuitka --onefile bot.py
 - Automatic backups of the server's database.
 - Manually backup the server's database.
 - Easily restore your database from a backup.
+- Includes a batch file to easily pull updates from a remote git repository.
 - Add custom commands to the discord server that can call other batch files.
 
 ## Installation
@@ -33,7 +34,6 @@ python -m nuitka --onefile bot.py
 
 ## Possible Future Plans
 - Add RCON commands to the bot and add option for RCON warnings to be sent when stopping/restarting/restoring the server. This would require getting RCON info in the config, adding potential security concerns from owners.
-- Add a git pull command to the bot?
 - Make the exe into a GUI enabled application?
 - Add an automatic startup script if the armaserver.exe is not running?
 - Add option to automatically stop/start the server at certain times, replacing the need for BEC? Could use RCON for restart warnings too.
