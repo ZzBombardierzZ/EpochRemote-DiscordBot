@@ -42,6 +42,15 @@ if not os.path.exists("config.json"):
         "Start_Server_Script_Location": "batch_files/start.bat",
         "Stop_Server_Script_Location": "batch_files/stop.bat",
         "Restart_Server_Script_Location": "batch_files/restart.bat",
+        "View_Logs_Command": True,
+        "Logs_Root_Directories": {
+            "Rotated Logs": "C:/DZE_Server_Config/RotatedLogs",
+            "Battleye Logs": "C:/DZE_Server_Config/BattlEye",
+            "Server Current RPT Logs": "C:/DZE_Server_Config/arma2oaserver.rpt",
+            "Discord Bot Logs": "logs",
+            "Antihack Logs": "logs/antihack",
+            "AddOrRemoveAnyYouWant": "TheRootLocationYouWantToAddOrRemove"
+        },
         "Use_Custom_Commands": False,
         "Custom_Commands": {
             "discordcommandname": {
@@ -63,7 +72,7 @@ else:
     with open("config.json", "r") as config_file:
         config_dict = json.load(config_file)
 
-    expected_dict_keys = ["token","Discord_Server_IDs","Discord_Remote_Control_User_IDs","SQL_Backups","SQL_Backup_Script_Location","Automatic_SQL_Backup_Minutes","SQL_Backups_Location","SQL_Restore_Command","Restore_SQL_Script_Location","Remote_Stop_Start_Restart","Start_Server_Script_Location","Stop_Server_Script_Location","Restart_Server_Script_Location"]
+    expected_dict_keys = ["token","Discord_Server_IDs","Discord_Remote_Control_User_IDs","SQL_Backups","SQL_Backup_Script_Location","Automatic_SQL_Backup_Minutes","SQL_Backups_Location","SQL_Restore_Command","Restore_SQL_Script_Location","Remote_Stop_Start_Restart","Start_Server_Script_Location","Stop_Server_Script_Location","Restart_Server_Script_Location","View_Logs_Command","Logs_Root_Directories"]
     for key in expected_dict_keys:
         if key not in config_dict:
             print_log("config.json is missing "+key+". Please edit it accordingly.")
@@ -105,6 +114,12 @@ else:
             AllowBotStart = False
         if config_dict["Remote_Stop_Start_Restart"] == True and type(config_dict["Restart_Server_Script_Location"]) is not str:
             print_log("config.json is invalid on Restart_Server_Script_Location. Please edit it accordingly.")
+            AllowBotStart = False
+        if type(config_dict["View_Logs_Command"]) is not bool:
+            print_log("config.json is invalid on View_Logs_Command. Please edit it accordingly.")
+            AllowBotStart = False
+        if type(config_dict["Logs_Root_Directories"]) is not dict:
+            print_log("config.json is invalid on Logs_Root_Directories. Please edit it accordingly.")
             AllowBotStart = False
     
 
@@ -450,29 +465,339 @@ if AllowBotStart: #Everything appears to be good to go
         else:
             print_log("ERROR: You must have a start and stop script to use the restore command.")
 
+    def generate_custom_command(command_name: str):
+        if len(config_dict["Custom_Commands"][command]["description"]) > 0 and len(config_dict["Custom_Commands"][command_name]["response"]) > 0:
+            @bot.command()
+            @lightbulb.command(name=command_name, description=config_dict["Custom_Commands"][command_name]["description"], guilds=config_dict["Discord_Server_IDs"]) #, auto_defer=True
+            @lightbulb.implements(lightbulb.SlashCommand)
+            async def custom_command(ctx: lightbulb.Context) -> None:
+                if ctx.author.id in config_dict["Discord_Remote_Control_User_IDs"]:
+                    print_log(str(ctx.author)+" used a custom command: "+command_name)
+                    subprocess.Popen(config_dict["Custom_Commands"][command_name]["location"], shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE)
+                    response = await ctx.respond(
+                        hikari.Embed(
+                            title=command_name,
+                            description=config_dict["Custom_Commands"][command_name]["response"]
+                            ),
+                        flags=hikari.MessageFlag.EPHEMERAL
+                    )
+                else:
+                    print_log(str(ctx.author)+" tried to use a custom command: "+command_name+". They are not in the allowed IDs.")
+                    send_not_authorized_message(ctx)
+        else:
+            print_log("ERROR: You must have a description and response for your "+command_name+" command.")
+
     if config_dict["Use_Custom_Commands"] == True:
         if len(config_dict["Custom_Commands"]) > 0:
             for command in config_dict["Custom_Commands"]:
-                if len(config_dict["Custom_Commands"][command]["description"]) > 0 and len(config_dict["Custom_Commands"][command]["response"]) > 0:
-                    @bot.command()
-                    @lightbulb.command(name=command, description=config_dict["Custom_Commands"][command]["description"], guilds=config_dict["Discord_Server_IDs"]) #, auto_defer=True
-                    @lightbulb.implements(lightbulb.SlashCommand)
-                    async def custom_command(ctx: lightbulb.Context) -> None:
-                        if ctx.author.id in config_dict["Discord_Remote_Control_User_IDs"]:
-                            print_log(str(ctx.author)+" used a custom command: "+command)
-                            subprocess.Popen(config_dict["Custom_Commands"][command]["location"], shell=True, creationflags=subprocess.CREATE_NEW_CONSOLE)
-                            response = await ctx.respond(
-                                hikari.Embed(
-                                    title=command,
-                                    description=config_dict["Custom_Commands"][command]["response"]
-                                    ),
+                generate_custom_command(command)
+                
+
+
+    def generate_log_buttons(bot: lightbulb.BotApp) -> t.Iterable[ActionRowBuilder]:
+        rows: t.List[ActionRowBuilder] = []
+        row = bot.rest.build_action_row()
+        (row.add_button(hikari.ButtonStyle.DANGER,"reverse").set_emoji("🔙").set_label("Back").add_to_container())
+        (row.add_button(hikari.ButtonStyle.SECONDARY,"up").set_emoji("🔼").set_label("Up").add_to_container())
+        (row.add_button(hikari.ButtonStyle.SECONDARY,"down").set_emoji("🔽").set_label("Down").add_to_container())
+        (row.add_button(hikari.ButtonStyle.SUCCESS,"download_file").set_emoji("💾").set_label("Download File").add_to_container())
+        
+        rows.append(row)
+        row = bot.rest.build_action_row()
+        (row.add_button(hikari.ButtonStyle.DANGER,"home").set_emoji("🏠").set_label("Home").add_to_container())
+        (row.add_button(hikari.ButtonStyle.SECONDARY,"back_page").set_emoji("⬅️").set_label("Page").add_to_container())
+        (row.add_button(hikari.ButtonStyle.SECONDARY,"forward_page").set_emoji("➡️").set_label("Page").add_to_container())
+        (row.add_button(hikari.ButtonStyle.PRIMARY,"open_folder").set_emoji("📂").set_label("Open Folder").add_to_container())
+
+        rows.append(row)
+        return rows
+
+    def get_directory_view(directory: str):
+        data_string = ""
+        for root, dirs, files in os.walk(directory, topdown=True):
+            for name in dirs:
+                #print(os.path.join(root, name))
+                data_string += os.path.join(root, name)+"/\n"
+            for name in files:
+                #print(os.path.join(root, name))
+                data_string += os.path.join(root, name)+"\n"
+        
+        data_string = data_string.replace("\\", "/").replace(directory, "")
+
+        this_directory_list = data_string.splitlines()
+
+        for line in this_directory_list:
+            if line[0] == "/" or line[0] == "\\":
+                line = line[1::] #remove the first slash
+            
+            isfolder = False
+            if line.endswith("/"):
+                isfolder = True
+
+            #print(line)
+
+        #print("This view:")
+        return_list = []    
+        for line in this_directory_list:
+            if line[0] == "/" or line[0] == "\\":
+                line = line[1::] #remove the first slash
+            if line.count("/") < 1:
+                #print(line)
+                return_list.append(line)
+            elif line.count("/") == 1 and line.endswith("/"):
+                #print(line)
+                return_list.append(line)
+
+        return return_list
+
+    def generate_log_pages(cur_dir_view_list: list):
+        pages = [""]
+        i_page = 0
+
+        #print("Generating pages...")
+        #print("cur_dir_view_list:"+ str(cur_dir_view_list))
+
+        for location in cur_dir_view_list:
+            if len(pages[i_page]) + len(location) + len("\n") > 3800 or pages[i_page].count("\n") > 20:
+                i_page += 1
+                pages.append(location+"\n")
+            else:
+                pages[i_page] += location+"\n"
+
+        #print("pages: "+str(pages))
+        return pages
+
+    #////
+    #if you are reading this, I want you to know I am ashamed of the amount of spaghetti code I have written. I am sorry. I pray God will forgive me.
+    #////
+
+    def generate_log_embed(log_name, pages, cur_page, cur_selected_index, cur_directory, errorMessage):
+        
+        this_page = pages[cur_page]
+        print("this_page: "+str(this_page))
+        this_page_split = this_page.splitlines()
+        the_description = ""
+        for i in range(len(this_page_split)):
+            if i == cur_selected_index:
+                the_description += "**> " + this_page_split[i] + "**"
+            else:
+                the_description += this_page_split[i]+"\n"
+
+        embed = hikari.Embed(
+            title=log_name+" (Page "+str(cur_page+1)+"/"+str(len(pages))+")",
+            description= the_description,
+            ).set_footer("--Current Directory: "+cur_directory)
+        if errorMessage != "":
+            embed.add_field(name="Error", value=errorMessage)
+        return embed
+
+    async def handle_log_menu(
+        bot: lightbulb.BotApp,
+        author: hikari.User,
+        message: hikari.Message,
+        pages: list,
+        home_directory: str,
+    ) -> None:
+        """Watches for events, and handles responding to them."""
+
+        #print("Log Menu")
+
+        page = 0
+        selected_file_index = -1
+        selected_file_or_folder = "123"
+        cur_directory = home_directory
+        with bot.stream(hikari.InteractionCreateEvent, 120).filter(
+            # Here we filter out events we don't care about.
+            lambda e: (isinstance(e.interaction, hikari.ComponentInteraction) and e.interaction.user == author and e.interaction.message == message)
+        ) as stream:
+            async for event in stream:
+                print("action received")
+                the_message = ""
+                cid = event.interaction.custom_id
+
+                file_list = pages[page].splitlines()
+                #print("file_list:"+str(file_list))
+
+                errorMessage = ""
+
+                if cid == "forward_page" or cid == "back_page":
+                    selected_file_index = -1
+                    selected_file_or_folder = "123"
+                    if cid == "forward_page":
+                        if page < (len(pages) - 1):
+                            page+=1
+                        else:
+                            page = 0
+                    else:
+                        if page > 0:
+                            page-=1
+                        else:
+                            page = (len(pages)-1)
+                
+                elif cid == "down" or cid == "up":
+                    if cid == "down":
+                        if selected_file_index < (len(file_list) - 1):
+                            selected_file_index+=1
+                        else:
+                            selected_file_index = 0
+                    else:
+                        if selected_file_index > 0:
+                            selected_file_index-=1
+                        else:
+                            selected_file_index = (len(file_list)-1)
+                    selected_file_or_folder = file_list[selected_file_index]
+
+                elif cid == "reverse":
+                    if cur_directory != home_directory:
+                        last_folder = cur_directory.split("/")[-2]
+                        print("reversing last_folder: "+last_folder)
+                        lenOfLastFolder = len(last_folder)+2 #+2 for the slashes
+                        cur_directory = cur_directory[:len(cur_directory)-lenOfLastFolder]
+                        print("cur_directory: "+cur_directory)
+                    else:
+                        #tell them they cant reverse out of home page
+                        errorMessage = "You cannot go back any further from the home page."
+                
+                elif cid == "download_file":
+                    if selected_file_or_folder.endswith("/"):
+                        selected_file_or_folder = "123"
+                        selected_file_index = -1
+                        #set error message
+                        errorMessage = "You cannot download a folder."
+
+                elif cid == "open_folder":
+                    if selected_file_or_folder.endswith("/"):
+                        cur_directory += "/"+selected_file_or_folder
+                        selected_file_or_folder = "123"
+                        selected_file_index = -1
+                        page = 0
+                        print("cur_directory: "+cur_directory)
+                    elif selected_file_index == -1:
+                        errorMessage = "Nothing has been selected."
+                    else:
+                        errorMessage = "A file is not a folder."
+
+                elif cid == "home":
+                    if cur_directory != home_directory:
+                        cur_directory = home_directory
+                        selected_file_or_folder = "123"
+                        selected_file_index = -1
+
+                if len(cur_directory) < len(home_directory):
+                    cur_directory = home_directory
+                cur_directory = cur_directory.replace("\\", "/")
+                cur_directory = cur_directory.replace("//", "/")
+
+                if cid != "download_file":
+                    cur_directory_view = get_directory_view(cur_directory)
+                    #print("cur_selected_index: "+str(selected_file_index))
+                    pages = generate_log_pages(cur_directory_view)
+                    embed = generate_log_embed(log_name, pages, page, selected_file_index, cur_directory, errorMessage)
+                    try:
+                        await event.interaction.create_initial_response(
+                            hikari.ResponseType.MESSAGE_UPDATE,
+                            embed=embed,
+                            flags=hikari.MessageFlag.EPHEMERAL
+                        )
+                    except hikari.NotFoundError:
+                        await event.interaction.edit_initial_response(
+                            embed=embed,
+                            flags=hikari.MessageFlag.EPHEMERAL
+                        )
+
+                else:
+                    if selected_file_index == -1 or selected_file_or_folder == "123" or selected_file_or_folder.endswith("/"):
+                        if errorMessage == "":
+                            errorMessage = "You must select a file first."
+                        cur_directory_view = get_directory_view(cur_directory)
+                        pages = generate_log_pages(cur_directory_view)
+                        embed = generate_log_embed(log_name, pages, page, selected_file_index, cur_directory, errorMessage)
+                        try:
+                            await event.interaction.create_initial_response(
+                                hikari.ResponseType.MESSAGE_UPDATE,
+                                embed=embed,
                                 flags=hikari.MessageFlag.EPHEMERAL
                             )
-                        else:
-                            print_log(str(ctx.author)+" tried to use a custom command: "+command+". They are not in the allowed IDs.")
-                            send_not_authorized_message(ctx)
+                        except hikari.NotFoundError:
+                            await event.interaction.edit_initial_response(
+                                embed=embed,
+                                flags=hikari.MessageFlag.EPHEMERAL
+                            )
+                    else:
+                        embed = hikari.Embed(
+                            title="Here is your file!",
+                            description= "",
+                        )
+
+                        try:
+                            await event.interaction.create_initial_response(
+                                hikari.ResponseType.MESSAGE_UPDATE,
+                                embed=embed,
+                                components=[],
+                                flags=hikari.MessageFlag.EPHEMERAL,
+                                attachment=cur_directory+"/"+selected_file_or_folder
+                            )
+                        except:
+                            await event.interaction.edit_initial_response(
+                                embed=embed,
+                                components=[],
+                                flags=hikari.MessageFlag.EPHEMERAL,
+                            )
+        print_log("Ending restore menu from "+str(author))
+
+
+
+    def create_log_command(log_name: str):
+        new_log_name = log_name.replace(" ", "_").lower()
+        @bot.command()
+        @lightbulb.command(name="viewlog_"+new_log_name, description="View the "+log_name+" log", guilds=config_dict["Discord_Server_IDs"]) #, auto_defer=True
+        @lightbulb.implements(lightbulb.SlashCommand)
+        async def logs_command(ctx: lightbulb.Context) -> None:
+            if ctx.author.id in config_dict["Discord_Remote_Control_User_IDs"]:
+                if os.path.isfile(config_dict["Logs_Root_Directories"][log_name]):
+                    embed = hikari.Embed(
+                        title="Here is your file!",
+                        description= "",
+                    )
+                    response = await ctx.respond(
+                        embed,
+                        flags=hikari.MessageFlag.EPHEMERAL,
+                        attachment=config_dict["Logs_Root_Directories"][log_name],
+                    )
+
+                    message = await response.message()
+                elif os.path.isdir(config_dict["Logs_Root_Directories"][log_name]): 
+                    print_log(str(ctx.author)+" viewed the "+log_name+" log.")
+                    rows=[]
+                    rows=generate_log_buttons(ctx.bot)
+                    home_directory = config_dict["Logs_Root_Directories"][log_name]
+                    cur_directory_view = get_directory_view(home_directory)
+                    cur_page = 0
+                    cur_selected_item = -1
+                    errorMessage = ""
+                    pages = generate_log_pages(cur_directory_view)
+                    embed = generate_log_embed(log_name, pages, cur_page, cur_selected_item, home_directory, errorMessage)
+                    response = await ctx.respond(
+                        embed,
+                        flags=hikari.MessageFlag.EPHEMERAL,
+                        components=rows,
+                    )
+
+                    message = await response.message()
+
+                    await handle_log_menu(ctx.bot, ctx.author, message, cur_directory_view, home_directory)
                 else:
-                    print_log("ERROR: You must have a description and response for your "+command+" command.")
+                    print("Log file not found for "+log_name)
+                
+            else:
+                print_log(str(ctx.author)+" tried to view the "+log_name+" log. They are not in the allowed IDs.")
+                send_not_authorized_message(ctx)
+
+    if config_dict["View_Logs_Command"] == True:
+        if len(config_dict["Logs_Root_Directories"]) > 0:
+            for log_name in config_dict["Logs_Root_Directories"]:
+                print("Generating command for "+log_name)
+                create_log_command(log_name)
 
     #TASKS
     if config_dict["Automatic_SQL_Backup_Minutes"] > 0 and config_dict["SQL_Backups"]:
