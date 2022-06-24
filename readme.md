@@ -3,7 +3,7 @@
 
 For your security, this bot only runs batch files so that my bot isn't reading any of your private information. Although it is open source and therefor you should be able to see for yourself that none of your information is being taken. If you want to package the bot yourself to make sure nothing funny was added to the exe, you can install the `lightbulb`, `hikari`, and `pyinstaller` python modules and run the following command in the directory containing bot.py:
 ~~~py
-pyinstaller --onefile bot.py
+pyinstaller --onefile --icon=discord_bot.ico bot.py
 ~~~
 
 ## Features
@@ -13,6 +13,7 @@ pyinstaller --onefile bot.py
 - Easily restore your database from a backup.
 - Includes a batch file to easily pull updates from a remote git repository.
 - Add custom commands to the discord server that can call other batch files.
+- Ability to download logs remotely from the server from desired folders.
 
 ## Installation
 - Download the latest release from [here](https://github.com/ZzBombardierzZ/EpochRemote-DiscordBot/archive/refs/heads/main.zip) and extract the bot.exe file into it's own folder. It's important to put it in a containing folder as it spits out a config file and log folder when it starts.
@@ -30,7 +31,14 @@ pyinstaller --onefile bot.py
 - If you don't want automatic SQL backups but still want the manual option, set the `SQL_Backups` to `true` and `Automatic_SQL_Backup_Minutes` to `0`.
 - If you are using SQL backups, it is best to follow the same path format as the script location.
 - **If you are using my included batch files** you will need to configure each one correctly. You can also simply change the path of the XXX_Script_Location to your own batch files.
+- You can now download logs from your server. It currently allows any file within the given directory to be downloaded (discord only allows 8MB max size per file), so be sure you trust the users you add to Discord_Remote_Control_User_IDs list in the config file if using this feature.
+    - You can have as many folder locations as you want for this feature.
+    - An example of the name of the discord command is "Rotated Logs", which will be turned into a slash command named /Rotated_Logs
+    - The location of that folder is "C:/DZE_Server_Config/RotatedLogs"
+    - You can edit these to your liking.
 
+## Recent Changes:
+- 6/24/22 - Added ability to download logs/files remotely from the server from desired folders. Also added a icon for the executable.
 
 ## Possible Future Plans
 - Add RCON commands to the bot and add option for RCON warnings to be sent when stopping/restarting/restoring the server. This would require getting RCON info in the config, adding potential security concerns from owners.
